@@ -59,19 +59,36 @@ export const useVideoPlayer = () => {
   const handleTimeUpdate = () => {
     if (!videoRef.current) return;
 
-    const currentTime = videoRef.current.currentTime;
-    const duration = videoRef.current.duration;
+    const video = videoRef.current;
+    const currentTime = video.currentTime;
+    const duration = video.duration;
 
     setCurrentTime(currentTime);
-    setProgress((currentTime / duration) * 100);
+
+    // Check if duration is valid (not NaN or 0)
+    if (duration && !isNaN(duration) && duration > 0) {
+      setDuration(duration);
+      setProgress((currentTime / duration) * 100);
+    }
+  };
+
+  // Handle metadata loaded - ensures duration is available
+  const handleLoadedMetadata = () => {
+    if (!videoRef.current) return;
+
+    const video = videoRef.current;
+    if (video.duration && !isNaN(video.duration)) {
+      setDuration(video.duration);
+    }
   };
 
   // Handle seeking
   const handleSeek = (value: number) => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !duration) return;
 
-    const time = (value / 100) * videoRef.current.duration;
+    const time = (value / 100) * duration;
     videoRef.current.currentTime = time;
+    setCurrentTime(time);
     setProgress(value);
   };
 
@@ -100,20 +117,34 @@ export const useVideoPlayer = () => {
     setShowCaptions(prev => !prev);
   };
 
-  // Listen for play/pause events
+  const resetVideoState = () => {
+    setIsPlaying(false);
+    setProgress(0);
+    setCurrentTime(0);
+    duration ? setDuration(duration) : setDuration(0);
+  };
+
+  // Listen for video events
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
-    const handleDurationChange = () => setDuration(video.duration);
+    const handleDurationChange = () => {
+      if (video.duration && !isNaN(video.duration)) {
+        setDuration(video.duration);
+      }
+    };
     const handleFullScreenChange = () => setIsFullScreen(!!document.fullscreenElement);
 
-    video.addEventListener('pause', handlePause);
+    // Add event listeners
     video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('durationchange', handleDurationChange);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('loadeddata', handleLoadedMetadata);
     document.addEventListener('fullscreenchange', handleFullScreenChange);
 
     return () => {
@@ -121,9 +152,11 @@ export const useVideoPlayer = () => {
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('durationchange', handleDurationChange);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('loadeddata', handleLoadedMetadata);
       document.removeEventListener('fullscreenchange', handleFullScreenChange);
     };
-  }, [videoRef]);
+  }, []);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -184,6 +217,78 @@ export const useVideoPlayer = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
+
+  // Listen for play/pause events
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleDurationChange = () => setDuration(video.duration);
+    const handleFullScreenChange = () => setIsFullScreen(!!document.fullscreenElement);
+
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('durationchange', handleDurationChange);
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+
+    return () => {
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('durationchange', handleDurationChange);
+      document.removeEventListener('fullscreenchange', handleFullScreenChange);
+    };
+  }, [videoRef]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Reset state when new video is loaded
+    resetVideoState();
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleDurationChange = () => {
+      if (video.duration && !isNaN(video.duration)) {
+        setDuration(video.duration);
+      }
+    };
+    const handleFullScreenChange = () => setIsFullScreen(!!document.fullscreenElement);
+    const handleLoadStart = () => resetVideoState();
+    const handleCanPlay = () => {
+      if (video.duration && !isNaN(video.duration)) {
+        setDuration(video.duration);
+      }
+    };
+
+    // Add event listeners
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('durationchange', handleDurationChange);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('loadeddata', handleLoadedMetadata);
+    video.addEventListener('loadstart', handleLoadStart);
+    video.addEventListener('canplay', handleCanPlay);
+    document.addEventListener('fullscreenchange', handleFullScreenChange);
+
+    return () => {
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('durationchange', handleDurationChange);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('loadeddata', handleLoadedMetadata);
+      video.removeEventListener('loadstart', handleLoadStart);
+      video.removeEventListener('canplay', handleCanPlay);
+      document.removeEventListener('fullscreenchange', handleFullScreenChange);
+    };
+  }, [videoRef.current]); // This dependency ensures the effect re-runs when video element changes
+
 
   return {
     videoRef,

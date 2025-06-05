@@ -11,10 +11,9 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ course, currentVideoId, onVideoSelect }) => {
   const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>(() => {
-    // Initialize with all topics expanded
     const expanded: Record<string, boolean> = {};
     course.topics.forEach(topic => {
-      expanded[topic.id] = false; // Set to false to start with all topics collapsed
+      expanded[topic.id] = false;
     });
     return expanded;
   });
@@ -44,7 +43,18 @@ const Sidebar: React.FC<SidebarProps> = ({ course, currentVideoId, onVideoSelect
 
       <div className="p-2">
         {course.topics
-          .sort((a, b) => a.title.localeCompare(b.title))
+          .sort((a, b) => {
+            const getLeadingNumber = (title: string) => {
+              const match = title.match(/^(\d{1,2})/);
+              return match ? parseInt(match[1], 10) : 0;
+            };
+            const numA = getLeadingNumber(a.title);
+            const numB = getLeadingNumber(b.title);
+            if (numA !== numB) {
+              return numA - numB;
+            }
+            return a.title.localeCompare(b.title);
+          })
           .map((topic) => (
             <div key={topic.id} className="mb-2">
               <button
@@ -66,31 +76,44 @@ const Sidebar: React.FC<SidebarProps> = ({ course, currentVideoId, onVideoSelect
 
               {expandedTopics[topic.id] && (
                 <div className="ml-6 mt-1 space-y-1">
+
                   {topic.videos
-                  .sort((a, b) => a.title.localeCompare(b.title))
-                  .map((video) => (
-                    <button
-                      key={video.id}
-                      className={`w-full flex items-center p-2 text-left rounded-md text-sm
-                            ${video.id === currentVideoId
-                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                      onClick={() => onVideoSelect(topic.id, video.id)}
-                    >
-                      <div className="flex-shrink-0 mr-2">
-                        {video.completed ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : (
-                          video.id === currentVideoId ? (
-                            <Play className="h-4 w-4 text-blue-500" />
+                    .sort((a, b) => {
+                      const getLeadingNumber = (title: string) => {
+                        const match = title.match(/^(\d{1,2})/);
+                        return match ? parseInt(match[1], 10) : 0;
+                      };
+                      const numA = getLeadingNumber(a.title);
+                      const numB = getLeadingNumber(b.title);
+                      if (numA !== numB) {
+                        return numA - numB;
+                      }
+
+                      return a.title.localeCompare(b.title);
+                    })
+                    .map((video) => (
+                      <button
+                        key={video.id}
+                        className={`w-full flex items-center p-2 text-left rounded-md text-sm
+                      ${video.id === currentVideoId
+                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                        onClick={() => onVideoSelect(topic.id, video.id)}
+                      >
+                        <div className="flex-shrink-0 mr-2">
+                          {video.completed ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
                           ) : (
-                            <Circle className="h-4 w-4 text-gray-400" />
-                          )
-                        )}
-                      </div>
-                      <span className="truncate">{video.title}</span>
-                    </button>
-                  ))}
+                            video.id === currentVideoId ? (
+                              <Play className="h-4 w-4 text-blue-500" />
+                            ) : (
+                              <Circle className="h-4 w-4 text-gray-400" />
+                            )
+                          )}
+                        </div>
+                        <span className="truncate">{video.title}</span>
+                      </button>
+                    ))}
                 </div>
               )}
             </div>

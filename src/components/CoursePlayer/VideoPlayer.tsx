@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   Play, Pause, Volume2, VolumeX,
   SkipBack, SkipForward, Maximize,
-  Minimize, Subtitles, Bookmark, Settings
+  Minimize, Subtitles, Bookmark, Settings,
+  Loader
 } from 'lucide-react';
 import { useVideoPlayer } from '../../hooks/useVideoPlayer';
 import { formatTime } from '../../utils/helpers';
@@ -14,6 +15,14 @@ interface VideoPlayerProps {
   onComplete: () => void;
   isCompleted: boolean;
 }
+
+// const formatTime = (seconds: number): string => {
+//   if (!seconds || isNaN(seconds)) return '0:00';
+
+//   const minutes = Math.floor(seconds / 60);
+//   const remainingSeconds = Math.floor(seconds % 60);
+//   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+// };
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onComplete, isCompleted }) => {
   const {
@@ -44,12 +53,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onComplete, isComplete
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [showPlaybackOptions, setShowPlaybackOptions] = useState(false);
 
+  // Load video and caption URLs
   useEffect(() => {
     const loadVideo = async () => {
       try {
+        // Clear previous video URL
+        if (videoUrl) {
+          URL.revokeObjectURL(videoUrl);
+          setVideoUrl(null);
+        }
+
         const videoBlob = await videoStorage.getVideo(video.path);
         if (videoBlob) {
-          setVideoUrl(URL.createObjectURL(videoBlob));
+          const newVideoUrl = URL.createObjectURL(videoBlob);
+          setVideoUrl(newVideoUrl);
         }
 
         if (video.caption) {
@@ -69,7 +86,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onComplete, isComplete
       if (videoUrl) URL.revokeObjectURL(videoUrl);
       if (captionUrl) URL.revokeObjectURL(captionUrl);
     };
-  }, [video]);
+  }, [video, video.path]);
 
   // Show controls when hovering or when video is playing
   useEffect(() => {
@@ -109,6 +126,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onComplete, isComplete
     }
   }, [videoRef, isCompleted, onComplete]);
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      // Always show controls when entering fullscreen
+      setShowControls(true);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   const handleMouseEnter = () => setIsHovering(true);
   const handleMouseLeave = () => setIsHovering(false);
 
@@ -122,22 +151,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onComplete, isComplete
   if (!videoUrl) {
     return (
       <div className="flex items-center justify-center h-full bg-black">
-        <div className="text-white">Loading video...</div>
+        <div className="text-white"><Loader/>Loading video...</div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="relative w-full h-full bg-black"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <video
         ref={videoRef}
         src={videoUrl}
         className="w-full h-full cursor-pointer z-50"
+        controls={false}
         onClick={(e) => {
           handleVideoClick(e);
         }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        onEnded={onComplete}
         playsInline
       >
         {captionUrl && (
@@ -169,9 +201,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onComplete, isComplete
 
       {/* Controls overlay */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent px-4 py-2 transition-opacity duration-200 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent px-4 py-2 transition-opacity duration-200 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}
         onClick={(e) => e.stopPropagation()}
       >
+        { /* Progress bar */}
         <div
           className="relative w-full h-2 bg-gray-700 rounded-full mb-4 cursor-pointer"
           onClick={(e) => {
@@ -182,7 +215,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onComplete, isComplete
         >
           <div
             className="absolute top-0 left-0 h-2 bg-blue-600 rounded-full"
-            style={{ width: `${progress}%` }}
+            style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
           />
           <div className="absolute top-0 left-0 w-full h-2 bg-white/20 rounded-full opacity-0 hover:opacity-100 transition-opacity" />
         </div>
@@ -270,7 +303,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ video, onComplete, isComplete
             </div>
 
             <button
-              onClick={onComplete}
+              onClick={(e) => {
+                e.stopPropagation();
+                onComplete();
+              }}
               className={`text-white hover:text-blue-400 transition-colors ${isCompleted ? 'text-green-500' : ''}`}
             >
               <Bookmark className="h-5 w-5" />
