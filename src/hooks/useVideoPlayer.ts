@@ -158,65 +158,6 @@ export const useVideoPlayer = () => {
     };
   }, []);
 
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!videoRef.current) return;
-
-      // Don't handle shortcuts if user is in an input field
-      if (document.activeElement?.tagName === 'INPUT' ||
-        document.activeElement?.tagName === 'TEXTAREA') {
-        return;
-      }
-
-      switch (e.key.toLowerCase()) {
-        case ' ':
-        case 'k':
-          e.preventDefault();
-          togglePlay();
-          break;
-        case 'arrowright':
-          e.preventDefault();
-          skip(10);
-          break;
-        case 'arrowleft':
-          e.preventDefault();
-          skip(-10);
-          break;
-        case 'f':
-          e.preventDefault();
-          toggleFullScreen();
-          break;
-        case 'm':
-          e.preventDefault();
-          toggleMute();
-          break;
-        case 'c':
-          e.preventDefault();
-          toggleCaptions();
-          break;
-        // Playback rate controls
-        case '1':
-          e.preventDefault();
-          handlePlaybackRateChange(1);
-          break;
-        case '2':
-          e.preventDefault();
-          handlePlaybackRateChange(1.5);
-          break;
-        case '3':
-          e.preventDefault();
-          handlePlaybackRateChange(2);
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
 
   // Listen for play/pause events
   useEffect(() => {

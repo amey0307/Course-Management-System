@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronDown, ChevronRight, Play, CheckCircle, Circle } from 'lucide-react';
 import { Course, Topic } from '../../types';
 import { calculateTopicProgress } from '../../utils/helpers';
@@ -17,6 +17,20 @@ const Sidebar: React.FC<SidebarProps> = ({ course, currentVideoId, onVideoSelect
     });
     return expanded;
   });
+
+  // Initialize expanded state for topics
+  useEffect(() => {
+    if (!currentVideoId) return;
+    const topicWithCurrentVideo = course.topics.find(topic =>
+      topic.videos.some(video => video.id === currentVideoId)
+    );
+    if (topicWithCurrentVideo) {
+      setExpandedTopics(prev => ({
+        ...prev,
+        [topicWithCurrentVideo.id]: true,
+      }));
+    }
+  }, [currentVideoId, course.topics]);
 
   const toggleTopic = (topicId: string) => {
     setExpandedTopics(prev => ({
