@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { FolderUp, Check, AlertCircle } from 'lucide-react';
+import { FolderUp, Check, AlertCircle, Loader } from 'lucide-react';
 import { useFileUpload } from '../../hooks/useFileUpload';
 import { useCourseStore } from '../../store/courseStore';
 import Button from '../ui/Button';
@@ -70,8 +70,6 @@ const UploadArea: React.FC = () => {
           }
         };
         
-        // This is a simplified approach for demonstration purposes
-        // In a real implementation, you would need to properly handle the folder structure
         alert("The file input method has limitations in the browser. Please use drag and drop for full functionality.");
       }
     };
@@ -92,14 +90,18 @@ const UploadArea: React.FC = () => {
     >
       {isUploading ? (
         <div className="flex flex-col items-center">
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-4">
+          <Loader className="w-8 h-8 text-blue-500 mb-4 animate-spin" />
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-4 max-w-md">
             <div 
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
-              style={{ width: `${uploadProgress}%` }}
+              className="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out" 
+              style={{ width: `${Math.min(uploadProgress || 0, 100)}%` }}
             ></div>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">
-            Processing course folder... {uploadProgress}%
+          <p className="text-gray-600 dark:text-gray-400 font-medium">
+            Processing course folder...
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+            {Math.round(uploadProgress || 0)}% complete
           </p>
         </div>
       ) : error ? (
@@ -109,7 +111,7 @@ const UploadArea: React.FC = () => {
           <p className="mb-4">{error}</p>
           <Button 
             variant="outline" 
-            onClick={() => uploadRef.current?.click()}
+            onClick={() => window.location.reload()}
           >
             Try Again
           </Button>

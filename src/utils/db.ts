@@ -40,6 +40,44 @@ class VideoStorage {
     const db = await this.init();
     await db.delete(STORE_NAME, id);
   }
+
+  async clearAllVideos(): Promise<void> {
+    const db = await this.init();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    await tx.objectStore(STORE_NAME).clear();
+  }
+
+  async getStorageSize(): Promise<number> {
+    const db = await this.init();
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const keys = await store.getAllKeys();
+
+    let totalSize = 0;
+    for (const key of keys) {
+      const blob = await store.get(key);
+      if (blob) totalSize += blob.size;
+    }
+    return totalSize;
+  }
+
+  async deleteCourse(courseId: string): Promise<void> {
+    // Delete all videos for a specific course
+    const coursesData = localStorage.getItem('courses');
+    const courses = coursesData ? JSON.parse(coursesData) : [];
+    const course = courses.find((c: any) => c.id === courseId);
+
+    if (course) {
+      for (const topic of course.topics) {
+        for (const video of topic.videos) {
+          await this.deleteVideo(video.path);
+          if (video.caption) {
+            await this.deleteVideo(video.caption);
+          }
+        }
+      }
+    }
+  }
 }
 
 export const videoStorage = new VideoStorage();
