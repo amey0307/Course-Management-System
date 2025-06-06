@@ -7,11 +7,13 @@ export const useFileUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [currentTask, setCurrentTask] = useState<string>('');
 
   const processUploadedFolder = useCallback(async (items: DataTransferItemList): Promise<Course | null> => {
     setIsUploading(true);
     setUploadProgress(0);
     setError(null);
+    setCurrentTask('Analyzing folder structure...');
 
     try {
       const folderEntry = Array.from(items)
@@ -27,137 +29,280 @@ export const useFileUpload = () => {
       const topics: Topic[] = [];
       const courseId = generateId();
 
-      // Read course folder
-      await new Promise<void>((resolve) => {
-        const dirReader = folderEntryAsDir.createReader();
+      // First pass: count total files for progress calculation
+      setCurrentTask('Scanning files...');
+      const { totalFiles, topicEntries } = await scanFolder(folderEntryAsDir);
 
-        const readEntries = () => {
-          dirReader.readEntries(async (entries) => {
-            if (entries.length === 0) {
-              resolve();
-              return;
-            }
+      if (totalFiles === 0) {
+        throw new Error('No supported files found in the course folder');
+      }
 
-            for (const entry of entries) {
-              if (entry.isDirectory) {
-                const topic: Topic = {
-                  id: generateId(),
-                  title: entry.name,
-                  videos: [],
-                  resources: []
-                };
+      setUploadProgress(10); // 10% for folder scanning
 
-                await readTopicFolder(entry as FileSystemDirectoryEntry, topic);
+      let processedFiles = 0;
 
-                if (topic.videos.length > 0 || (topic.resources && topic.resources.length > 0)) {
-                  topics.push(topic);
-                }
-              }
-            }
+      // Second pass: process files with progress tracking
+      for (let i = 0; i < topicEntries.length; i++) {
+        const entry = topicEntries[i];
+        setCurrentTask(`Processing topic: ${entry.name}`);
 
-            readEntries();
-          }, (error) => {
-            console.error('Error reading entries:', error);
-            resolve();
-          });
+        const topic: Topic = {
+          id: generateId(),
+          title: entry.name,
+          videos: [],
+          resources: []
         };
 
-        readEntries();
-      });
+        const filesInTopic = await readTopicFolder(
+          entry,
+          topic,
+          (progress) => {
+            processedFiles++;
+            // Progress from 10% to 90% for file processing
+            const fileProgress = 10 + ((processedFiles / totalFiles) * 80);
+            setUploadProgress(Math.min(fileProgress, 90));
+            setCurrentTask(`Processing ${entry.name}: ${progress}`);
+          }
+        );
+
+        if (topic.videos.length > 0 || (topic.resources && topic.resources.length > 0)) {
+          topics.push(topic);
+        }
+      }
+
+      setCurrentTask('Finalizing course...');
+      setUploadProgress(95);
 
       const course: Course = {
         id: courseId,
         title: courseName,
-        topics,
+        topics: topics.sort((a, b) => {
+          const getLeadingNumber = (title: string) => {
+            const match = title.match(/^(\d{1,2})/);
+            return match ? parseInt(match[1], 10) : 0;
+          };
+          return getLeadingNumber(a.title) - getLeadingNumber(b.title);
+        }),
         progress: 0
       };
 
       saveCourseData(course);
       setUploadProgress(100);
-      setIsUploading(false);
+      setCurrentTask('Upload complete!');
+
+      // Keep the success state visible for a moment
+      setTimeout(() => {
+        setIsUploading(false);
+        setCurrentTask('');
+      }, 1000);
+
       return course;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
+      setCurrentTask('');
       return null;
     } finally {
-      setIsUploading(false);
-      setTimeout(() => setUploadProgress(0), 2000);
+      setTimeout(() => {
+        setUploadProgress(0);
+        setCurrentTask('');
+      }, 3000);
     }
   }, []);
 
-  const readTopicFolder = async (dirEntry: FileSystemDirectoryEntry, topic: Topic): Promise<void> => {
-    return new Promise<void>((resolve) => {
-      const dirReader = dirEntry.createReader();
+  // New function to scan folder and count files
+  const scanFolder = async (folderEntry: FileSystemDirectoryEntry): Promise<{
+    totalFiles: number;
+    topicEntries: FileSystemDirectoryEntry[];
+  }> => {
+    return new Promise((resolve) => {
+      const dirReader = folderEntry.createReader();
+      const topicEntries: FileSystemDirectoryEntry[] = [];
+      let totalFiles = 0;
 
       const readEntries = () => {
         dirReader.readEntries(async (entries) => {
           if (entries.length === 0) {
-            resolve();
+            resolve({ totalFiles, topicEntries });
+            return;
+          }
+
+          for (const entry of entries) {
+            if (entry.isDirectory) {
+              topicEntries.push(entry as FileSystemDirectoryEntry);
+              // Count files in this topic
+              const filesInTopic = await countFilesInTopic(entry as FileSystemDirectoryEntry);
+              totalFiles += filesInTopic;
+            }
+          }
+
+          readEntries();
+        }, (error) => {
+          console.error('Error scanning folder:', error);
+          resolve({ totalFiles: 0, topicEntries: [] });
+        });
+      };
+
+      readEntries();
+    });
+  };
+
+  // Count files in a topic folder
+  const countFilesInTopic = async (dirEntry: FileSystemDirectoryEntry): Promise<number> => {
+    return new Promise((resolve) => {
+      const dirReader = dirEntry.createReader();
+      let fileCount = 0;
+
+      const readEntries = () => {
+        dirReader.readEntries((entries) => {
+          if (entries.length === 0) {
+            resolve(fileCount);
             return;
           }
 
           for (const entry of entries) {
             if (entry.isFile) {
-              const fileEntry = entry as FileSystemFileEntry;
-              const fileName = fileEntry.name;
+              const fileName = entry.name;
               const fileExtension = fileName.split('.').pop()?.toLowerCase();
 
-              // Handle video files
-              if (fileExtension && ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'].includes(fileExtension)) {
-                const file = await getFileFromEntry(fileEntry);
-                const videoId = generateId();
-
-                await videoStorage.storeVideo(videoId, file);
-
-                // Check for caption file
-                const captionFileName = fileName.replace(/\.[^/.]+$/, "") + ".vtt";
-                let captionPath = undefined;
-
-                for (const captionEntry of entries) {
-                  if (captionEntry.isFile && captionEntry.name === captionFileName) {
-                    const captionFile = await getFileFromEntry(captionEntry as FileSystemFileEntry);
-                    const captionBlob = new Blob([captionFile], { type: 'text/vtt' });
-                    const captionId = `caption-${videoId}`;
-                    await videoStorage.storeVideo(captionId, captionBlob);
-                    captionPath = captionId;
-                    break;
-                  }
-                }
-
-                topic.videos.push({
-                  id: videoId,
-                  title: fileName.replace(/\.[^/.]+$/, ""),
-                  path: videoId,
-                  caption: captionPath,
-                  completed: false
-                });
-              }
-              // Handle resource files
-              else if (fileExtension && ['pdf', 'html'].includes(fileExtension)) {
-                const file = await getFileFromEntry(fileEntry);
-                const resourceId = generateId();
-
-                // Store resource file in IndexedDB
-                await videoStorage.storeVideo(resourceId, file);
-
-                if (!topic.resources) {
-                  topic.resources = [];
-                }
-
-                topic.resources.push({
-                  id: resourceId,
-                  title: fileName.replace(/\.[^/.]+$/, ""),
-                  path: resourceId,
-                  type: fileExtension as 'pdf' | 'html'
-                });
+              // Count supported files
+              if (fileExtension && [
+                'mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', // videos
+                'pdf', 'html', // resources
+                'vtt' // captions
+              ].includes(fileExtension)) {
+                fileCount++;
               }
             }
           }
 
           readEntries();
         }, (error) => {
-          console.error('Error reading entries:', error);
-          resolve();
+          console.error('Error counting files:', error);
+          resolve(0);
+        });
+      };
+
+      readEntries();
+    });
+  };
+
+  const readTopicFolder = async (
+    dirEntry: FileSystemDirectoryEntry,
+    topic: Topic,
+    onProgress: (currentFile: string) => void
+  ): Promise<number> => {
+    return new Promise<number>((resolve) => {
+      const dirReader = dirEntry.createReader();
+      let processedCount = 0;
+
+      const readEntries = () => {
+        dirReader.readEntries(async (entries) => {
+          if (entries.length === 0) {
+            resolve(processedCount);
+            return;
+          }
+
+          // Sort entries to process videos first, then resources
+          const sortedEntries = entries
+            .filter(entry => entry.isFile)
+            .sort((a, b) => {
+              const aExt = a.name.split('.').pop()?.toLowerCase() || '';
+              const bExt = b.name.split('.').pop()?.toLowerCase() || '';
+
+              // Prioritize videos, then resources, then captions
+              const getTypePriority = (ext: string) => {
+                if (['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'].includes(ext)) return 1;
+                if (['pdf', 'html'].includes(ext)) return 2;
+                if (ext === 'vtt') return 3;
+                return 4;
+              };
+
+              return getTypePriority(aExt) - getTypePriority(bExt);
+            });
+
+          for (const entry of sortedEntries) {
+            if (entry.isFile) {
+              const fileEntry = entry as FileSystemFileEntry;
+              const fileName = fileEntry.name;
+              const fileExtension = fileName.split('.').pop()?.toLowerCase();
+
+              onProgress(fileName);
+
+              try {
+                // Handle video files
+                if (fileExtension && ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'].includes(fileExtension)) {
+                  const file = await getFileFromEntry(fileEntry);
+                  const videoId = generateId();
+
+                  await videoStorage.storeVideo(videoId, file);
+
+                  // Check for caption file
+                  const captionFileName = fileName.replace(/\.[^/.]+$/, "") + ".vtt";
+                  let captionPath = undefined;
+
+                  for (const captionEntry of entries) {
+                    if (captionEntry.isFile && captionEntry.name === captionFileName) {
+                      const captionFile = await getFileFromEntry(captionEntry as FileSystemFileEntry);
+                      const captionBlob = new Blob([captionFile], { type: 'text/vtt' });
+                      const captionId = `caption-${videoId}`;
+                      await videoStorage.storeVideo(captionId, captionBlob);
+                      captionPath = captionId;
+                      break;
+                    }
+                  }
+
+                  topic.videos.push({
+                    id: videoId,
+                    title: fileName.replace(/\.[^/.]+$/, ""),
+                    path: videoId,
+                    caption: captionPath,
+                    completed: false
+                  });
+
+                  processedCount++;
+                }
+                // Handle resource files
+                else if (fileExtension && ['pdf', 'html'].includes(fileExtension)) {
+                  const file = await getFileFromEntry(fileEntry);
+                  const resourceId = generateId();
+
+                  await videoStorage.storeVideo(resourceId, file);
+
+                  if (!topic.resources) {
+                    topic.resources = [];
+                  }
+
+                  topic.resources.push({
+                    id: resourceId,
+                    title: fileName.replace(/\.[^/.]+$/, ""),
+                    path: resourceId,
+                    type: fileExtension as 'pdf' | 'html'
+                  });
+
+                  processedCount++;
+                }
+              } catch (fileError) {
+                console.error(`Error processing file ${fileName}:`, fileError);
+              }
+
+              // Small delay to allow UI updates
+              await new Promise(resolve => setTimeout(resolve, 10));
+            }
+          }
+
+          // Sort videos by number
+          topic.videos.sort((a, b) => {
+            const getLeadingNumber = (title: string) => {
+              const match = title.match(/^(\d{1,2})/);
+              return match ? parseInt(match[1], 10) : 0;
+            };
+            return getLeadingNumber(a.title) - getLeadingNumber(b.title);
+          });
+
+          readEntries();
+        }, (error) => {
+          console.error('Error reading topic entries:', error);
+          resolve(processedCount);
         });
       };
 
@@ -186,6 +331,7 @@ export const useFileUpload = () => {
     processUploadedFolder,
     isUploading,
     uploadProgress,
-    error
+    error,
+    currentTask
   };
 };

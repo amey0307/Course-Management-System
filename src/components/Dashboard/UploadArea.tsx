@@ -5,7 +5,7 @@ import { useCourseStore } from '../../store/courseStore';
 import Button from '../ui/Button';
 
 const UploadArea: React.FC = () => {
-  const { processUploadedFolder, isUploading, uploadProgress, error } = useFileUpload();
+  const { processUploadedFolder, isUploading, uploadProgress, error, currentTask } = useFileUpload();
   const { addCourse } = useCourseStore();
   const [isDragOver, setIsDragOver] = useState(false);
   const uploadRef = useRef<HTMLDivElement>(null);
@@ -40,36 +40,6 @@ const UploadArea: React.FC = () => {
     input.onchange = async (e) => {
       const target = e.target as HTMLInputElement;
       if (target.files && target.files.length > 0) {
-        // Convert FileList to DataTransferItemList-like structure
-        const items = {
-          length: target.files.length,
-          [Symbol.iterator]: function* () {
-            for (let i = 0; i < this.length; i++) {
-              yield {
-                kind: 'file',
-                webkitGetAsEntry: () => ({
-                  isDirectory: target.files![i].webkitRelativePath.split('/').length > 2,
-                  name: target.files![i].webkitRelativePath.split('/')[0],
-                  createReader: () => ({
-                    readEntries: (callback: (entries: any[]) => void) => {
-                      const folderEntries = Array.from(target.files as FileList)
-                        .filter(file => file.webkitRelativePath.startsWith(target.files![i].webkitRelativePath.split('/')[0]))
-                        .map(file => ({
-                          isDirectory: file.webkitRelativePath.split('/').length > 2,
-                          name: file.webkitRelativePath.split('/')[1],
-                          createReader: () => ({
-                            readEntries: (cb: (entries: any[]) => void) => cb([])
-                          })
-                        }));
-                      callback(folderEntries);
-                    }
-                  })
-                })
-              };
-            }
-          }
-        };
-        
         alert("The file input method has limitations in the browser. Please use drag and drop for full functionality.");
       }
     };
@@ -93,16 +63,34 @@ const UploadArea: React.FC = () => {
           <Loader className="w-8 h-8 text-blue-500 mb-4 animate-spin" />
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-4 max-w-md">
             <div 
-              className="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out" 
+              className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500 ease-out" 
               style={{ width: `${Math.min(uploadProgress || 0, 100)}%` }}
             ></div>
           </div>
-          <p className="text-gray-600 dark:text-gray-400 font-medium">
-            Processing course folder...
+          <p className="text-gray-800 dark:text-gray-200 font-medium">
+            {currentTask || 'Processing course folder...'}
           </p>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {Math.round(uploadProgress || 0)}% complete
           </p>
+          
+          {/* Progress indicator with steps */}
+          <div className="mt-4 flex items-center space-x-2 text-xs text-gray-500">
+            <div className={`w-2 h-2 rounded-full ${uploadProgress > 0 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+            <span>Scan</span>
+            <div className={`w-2 h-2 rounded-full ${uploadProgress > 10 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+            <span>Process</span>
+            <div className={`w-2 h-2 rounded-full ${uploadProgress > 90 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+            <span>Save</span>
+            <div className={`w-2 h-2 rounded-full ${uploadProgress >= 100 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+            <span>Complete</span>
+          </div>
+        </div>
+      ) : uploadProgress >= 100 && !error ? (
+        <div className="flex flex-col items-center text-green-600">
+          <Check className="w-12 h-12 mb-4" />
+          <p className="text-lg font-medium mb-2">Upload Successful!</p>
+          <p className="text-gray-600 dark:text-gray-400">Your course has been uploaded and is ready to use.</p>
         </div>
       ) : error ? (
         <div className="flex flex-col items-center text-red-500">
