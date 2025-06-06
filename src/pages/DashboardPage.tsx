@@ -2,31 +2,31 @@ import React, { useEffect, useState } from 'react';
 import { useCourseStore } from '../store/courseStore';
 import CourseGrid from '../components/Dashboard/CourseGrid';
 import UploadArea from '../components/Dashboard/UploadArea';
-import { FolderPlus, Info, Folder, FileVideo, FileText, Plus, X, AlertTriangle, HardDrive, Trash2 } from 'lucide-react';
-import StorageManager from '../components/StorageManager';
+import StorageLimitSettings from '../components/StorageLimit/StorageLimitSettings';
+import { FolderPlus, Info, Folder, FileVideo, FileText, Plus, X, AlertTriangle, HardDrive, Trash2, Settings } from 'lucide-react';
+import StorageManager from '../components/StorageLimit/StorageManager';
 import { videoStorage } from '../utils/db';
-import { STORAGE_LIMIT } from '../store/StorageStore';
+import { useStorageStore } from '../store/StorageStore';
 
 const DashboardPage: React.FC = () => {
   const { courses, loadCourses } = useCourseStore();
+  const { storageLimit } = useStorageStore();
   const [showUploadArea, setShowUploadArea] = useState(false);
   const [showStorageAlert, setShowStorageAlert] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [storageSize, setStorageSize] = useState(0);
-
-  // Storage limit: 20GB in bytes
-  // const STORAGE_LIMIT = 25 * 1024 * 1024 * 1024; // 25GB
 
   useEffect(() => {
     loadCourses();
     checkStorageLimit();
-  }, [loadCourses]);
+  }, [loadCourses, storageLimit]); // Re-check when limit changes
 
   const checkStorageLimit = async () => {
     try {
       const currentSize = await videoStorage.getStorageSize();
       setStorageSize(currentSize);
       
-      if (currentSize > STORAGE_LIMIT) {
+      if (currentSize > storageLimit) {
         setShowStorageAlert(true);
       }
     } catch (error) {
@@ -89,19 +89,19 @@ const DashboardPage: React.FC = () => {
                 <div className="flex items-center mb-4">
                   <div className="h-5 w-5 mr-2"></div>
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Limit: <span className="font-semibold">{formatBytes(STORAGE_LIMIT)}</span>
+                    Limit: <span className="font-semibold">{formatBytes(storageLimit)}</span>
                   </span>
                 </div>
                 
                 <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                  You've exceeded the {STORAGE_LIMIT / (1024 * 1024 * 1024)} GB storage limit. Please free up space by deleting some courses before uploading new ones.
+                  You've exceeded the {storageLimit / (1024 * 1024 * 1024)} GB storage limit. Please free up space by deleting some courses before uploading new ones.
                 </p>
 
                 {/* Progress bar showing storage usage */}
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-4">
                   <div 
                     className="bg-red-600 h-3 rounded-full transition-all duration-300" 
-                    style={{ width: `${Math.min((storageSize / STORAGE_LIMIT) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((storageSize / storageLimit) * 100, 100)}%` }}
                   ></div>
                 </div>
               </div>
@@ -146,12 +146,19 @@ const DashboardPage: React.FC = () => {
             </p>
           </div>
           
-          {/* Add Course Button */}
+          {/* Controls */}
           <div className="flex items-center gap-4 mt-4 md:mt-0">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="flex items-center px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-all duration-200"
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </button>
             <button
               onClick={() => setShowUploadArea(!showUploadArea)}
               className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              disabled={storageSize > STORAGE_LIMIT}
+              disabled={storageSize > storageLimit}
             >
               {showUploadArea ? (
                 <>
@@ -162,7 +169,7 @@ const DashboardPage: React.FC = () => {
                 <>
                   <Plus className="mr-2 h-5 w-5" />
                   Add Course
-                  {storageSize > STORAGE_LIMIT && (
+                  {storageSize > storageLimit && (
                     <span className="ml-2 text-xs bg-red-500 px-2 py-1 rounded">
                       Storage Full
                     </span>
@@ -173,15 +180,18 @@ const DashboardPage: React.FC = () => {
             <StorageManager />
           </div>
         </div>
+
+        {/* Storage Limit Settings */}
+        {showSettings && <StorageLimitSettings />}
         
         {/* Storage warning bar (always visible if over limit) */}
-        {storageSize > STORAGE_LIMIT && (
+        {storageSize > storageLimit && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
                 <span className="text-red-800 dark:text-red-200 font-medium">
-                  Storage limit exceeded: {formatBytes(storageSize)} / {formatBytes(STORAGE_LIMIT)}
+                  Storage limit exceeded: {formatBytes(storageSize)} / {formatBytes(storageLimit)}
                 </span>
               </div>
               <button
@@ -195,7 +205,7 @@ const DashboardPage: React.FC = () => {
         )}
         
         {/* Upload Area - Only show when button is clicked and storage is not full */}
-        {showUploadArea && storageSize <= STORAGE_LIMIT && (
+        {showUploadArea && storageSize <= storageLimit && (
           <div className="mb-12 backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-xl">
             <div className="flex items-center mb-4">
               <FolderPlus className="mr-2 h-5 w-5 text-blue-500" />

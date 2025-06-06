@@ -53,7 +53,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onDelete }) => {
       {/* Card Content */}
       <div onClick={handleClick} className="p-6">
         {/* Course Title */}
-        <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+        <h3 className="text-lg line-clamp-1 font-semibold mb-3 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
           {course.title}
         </h3>
 

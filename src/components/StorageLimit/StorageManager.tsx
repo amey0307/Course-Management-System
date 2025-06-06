@@ -1,13 +1,13 @@
 // src/components/StorageManager.tsx
 import React, { useState, useEffect } from 'react';
 import { Trash2, HardDrive } from 'lucide-react';
-import { videoStorage } from '../utils/db';
-import Button from './ui/Button';
-import { STORAGE_LIMIT } from '../store/StorageStore';
+import { videoStorage } from '../../utils/db';
+import Button from '../ui/Button';
+import { STORAGE_LIMIT } from '../../store/StorageStore';
 
 const StorageManager: React.FC = () => {
   const [storageSize, setStorageSize] = useState(0);
-  
+
   useEffect(() => {
     loadStorageSize();
   }, []);
