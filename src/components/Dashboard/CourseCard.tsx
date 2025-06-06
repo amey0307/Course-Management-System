@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Course } from '../../types';
 import { Play, Clock, CheckCircle, Users, Trash2 } from 'lucide-react';
+import { AlertDialogDemo } from '../AlertDialogDemo';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { AlertDialogFooter, AlertDialogHeader } from '../ui/alert-dialog';
 
 interface CourseCardProps {
   course: Course;
@@ -20,7 +23,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onDelete }) => {
     e.stopPropagation(); // Prevent card click when delete button is clicked
     setIsDeleting(true);
     try {
-      await onDelete();
+      onDelete();
     } finally {
       setIsDeleting(false);
     }
@@ -35,20 +38,42 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onDelete }) => {
   const progress = totalVideos > 0 ? (completedVideos / totalVideos) * 100 : 0;
 
   return (
+
     <div className="group relative backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden">
       {/* Delete Button */}
-      <button
-        onClick={handleDelete}
-        disabled={isDeleting}
-        className="absolute top-3 right-3 z-10 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg disabled:opacity-50"
-        title="Delete course"
-      >
-        {isDeleting ? (
-          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-        ) : (
-          <Trash2 className="h-4 w-4" />
-        )}
-      </button>
+      <AlertDialog>
+        <AlertDialogTrigger>
+          <button
+            disabled={isDeleting}
+            className="absolute top-3 right-3 z-10 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg disabled:opacity-50"
+            title="Delete course"
+          >
+            {isDeleting ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Course</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this course? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className='mr-1' onClick={() => setIsDeleting(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white rounded-sm">
+              {isDeleting ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <div className='p-[5px]'>Delete</div>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Card Content */}
       <div onClick={handleClick} className="p-6">

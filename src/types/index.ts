@@ -7,8 +7,6 @@ export interface Video {
   completed: boolean;
 }
 
-// ...existing code...
-
 export interface Resource {
   id: string;
   title: string;
@@ -20,10 +18,8 @@ export interface Topic {
   id: string;
   title: string;
   videos: Video[];
-  resources?: Resource[]; // Add this line
+  resources?: Resource[];
 }
-
-// ...existing code...
 
 export interface Course {
   id: string;

@@ -7,6 +7,17 @@ import { FolderPlus, Info, Folder, FileVideo, FileText, Plus, X, AlertTriangle, 
 import StorageManager from '../components/StorageLimit/StorageManager';
 import { videoStorage } from '../utils/db';
 import { useStorageStore } from '../store/StorageStore';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../components/ui/alert-dialog"
 
 const DashboardPage: React.FC = () => {
   const { courses, loadCourses } = useCourseStore();
@@ -37,22 +48,20 @@ const DashboardPage: React.FC = () => {
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const clearAllStorage = async () => {
-    if (confirm('This will delete all videos and courses. Are you sure?')) {
-      try {
-        await videoStorage.clearAllVideos();
-        localStorage.removeItem('courses');
-        setStorageSize(0);
-        setShowStorageAlert(false);
-        window.location.reload();
-      } catch (error) {
-        console.error('Failed to clear storage:', error);
-      }
+    try {
+      await videoStorage.clearAllVideos();
+      localStorage.removeItem('courses');
+      setStorageSize(0);
+      setShowStorageAlert(false);
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to clear storage:', error);
     }
   };
 

@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Management System - Module Flow Diagram</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: flex;
+            height: calc(100vh - 140px);
+        }
+
+        .diagram-area {
+            flex: 1;
+            padding: 30px;
+            overflow: auto;
+            background: #f8f9fa;
+        }
+
+        .sidebar {
+            width: 400px;
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .flow-diagram {
+            position: relative;
+            min-height: 800px;
+        }
+
+        .module {
+            position: absolute;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            min-width: 140px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .module:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .module.ui-layer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .module.logic-layer {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .module.data-layer {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .module.active {
+            transform: scale(1.1);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+
+        .connection {
+            position: absolute;
+            width: 2px;
+            background: #34495e;
+            transform-origin: top;
+        }
+
+        .arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 10px solid #34495e;
+        }
+
+        .layer-label {
+            position: absolute;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #34495e;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 16px;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .module-info {
+            background: #34495e;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .module-info h3 {
+            color: #3498db;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .module-info p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .module-info ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .module-info li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .highlight {
+            color: #f39c12;
+            font-weight: bold;
+        }
+
+        .code-snippet {
+            background: #2c3e50;
+            border: 1px solid #34495e;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .legend {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: 300px;
+            }
+            
+            .legend {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Course Management System</h1>
+            <p>Interactive Module Flow Diagram - Click any module to explore its functionality</p>
+        </div>
+
+        <div class="main-content">
+            <div class="diagram-area">
+                <div class="legend">
+                    <h4 style="margin-bottom: 10px;">Module Layers</h4>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                        <span>UI Layer</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div>
+                        <span>Logic Layer</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div>
+                        <span>Data Layer</span>
+                    </div>
+                </div>
+
+                <div class="flow-diagram">
+                    <!-- Layer Labels -->
+                    <div class="layer-label" style="top: 20px; left: 50px;">🖥️ UI Layer</div>
+                    <div class="layer-label" style="top: 220px; left: 50px;">🧠 Logic Layer</div>
+                    <div class="layer-label" style="top: 420px; left: 50px;">💾 Data Layer</div>
+
+                    <!-- UI Layer Modules -->
+                    <div class="module ui-layer" data-module="dashboard" style="top: 60px; left: 200px;">
+                        📊 Dashboard
+                    </div>
+                    <div class="module ui-layer" data-module="upload" style="top: 60px; left: 400px;">
+                        📁 Upload Area
+                    </div>
+                    <div class="module ui-layer" data-module="course-grid" style="top: 60px; left: 600px;">
+                        🗂️ Course Grid
+                    </div>
+                    <div class="module ui-layer" data-module="course-player" style="top: 60px; left: 800px;">
+                        🎥 Course Player
+                    </div>
+                    <div class="module ui-layer" data-module="sidebar" style="top: 120px; left: 400px;">
+                        📑 Sidebar
+                    </div>
+                    <div class="module ui-layer" data-module="video-player" style="top: 120px; left: 600px;">
+                        ▶️ Video Player
+                    </div>
+                    <div class="module ui-layer" data-module="storage-settings" style="top: 120px; left: 800px;">
+                        ⚙️ Storage Settings
+                    </div>
+
+                    <!-- Logic Layer Modules -->
+                    <div class="module logic-layer" data-module="course-store" style="top: 260px; left: 200px;">
+                        🏪 Course Store
+                    </div>
+                    <div class="module logic-layer" data-module="storage-store" style="top: 260px; left: 400px;">
+                        💿 Storage Store
+                    </div>
+                    <div class="module logic-layer" data-module="file-upload-hook" style="top: 260px; left: 600px;">
+                        📤 useFileUpload
+                    </div>
+                    <div class="module logic-layer" data-module="video-player-hook" style="top: 260px; left: 800px;">
+                        🎬 useVideoPlayer
+                    </div>
+
+                    <!-- Data Layer Modules -->
+                    <div class="module data-layer" data-module="indexeddb" style="top: 460px; left: 200px;">
+                        🗄️ IndexedDB
+                    </div>
+                    <div class="module data-layer" data-module="localstorage" style="top: 460px; left: 400px;">
+                        💽 LocalStorage
+                    </div>
+                    <div class="module data-layer" data-module="video-storage" style="top: 460px; left: 600px;">
+                        📹 VideoStorage
+                    </div>
+                    <div class="module data-layer" data-module="file-system" style="top: 460px; left: 800px;">
+                        📂 FileSystem API
+                    </div>
+
+                    <!-- Connection Lines -->
+                    <svg style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+                        <!-- UI to Logic connections -->
+                        <line x1="270" y1="140" x2="270" y2="260" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="470" y1="140" x2="470" y2="260" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="670" y1="140" x2="670" y2="260" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="870" y1="140" x2="870" y2="260" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        
+                        <!-- Logic to Data connections -->
+                        <line x1="270" y1="340" x2="270" y2="460" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="470" y1="340" x2="470" y2="460" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="670" y1="340" x2="670" y2="460" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="870" y1="340" x2="870" y2="460" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                        <!-- Cross connections -->
+                        <line x1="340" y1="280" x2="600" y2="480" stroke="#e74c3c" stroke-width="2" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+                        <line x1="670" y1="340" x2="270" y2="460" stroke="#e74c3c" stroke-width="2" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#34495e" />
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div id="module-details">
+                    <h2 style="color: #3498db; margin-bottom: 20px;">📋 Module Information</h2>
+                    <p style="color: #bdc3c7;">Click any module in the diagram to explore its functionality and implementation details.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const moduleData = {
+            dashboard: {
+                title: "📊 Dashboard Page",
+                description: "Main entry point of the application where users can view courses, upload new ones, and manage storage.",
+                functionality: [
+                    "🎯 Display course grid with progress tracking",
+                    "📤 Upload course functionality via drag & drop",
+                    "💾 Storage monitoring and limit management",
+                    "⚙️ Settings panel for storage configuration",
+                    "🚨 Storage alert system when limits exceeded"
+                ],
+                implementation: `
+// Key functionality:
+const DashboardPage = () => {
+  const { courses, loadCourses } = useCourseStore();
+  const { storageLimit } = useStorageStore();
+  
+  // Storage monitoring
+  const checkStorageLimit = async () => {
+    const currentSize = await videoStorage.getStorageSize();
+    if (currentSize > storageLimit) {
+      setShowStorageAlert(true);
+    }
+  };
+  
+  return (
+    // Dashboard UI with course grid and upload area
+  );
+};`,
+                connections: "Connects to CourseStore for data, StorageStore for limits, and UploadArea for course creation"
+            },
+            upload: {
+                title: "📁 Upload Area",
+                description: "Handles drag & drop course folder uploads with progress tracking and file processing.",
+                functionality: [
+                    "📂 Drag & drop folder interface",
+                    "📊 Real-time upload progress tracking",
+                    "🔍 Automatic folder structure detection",
+                    "🎥 Video file processing and storage",
+                    "📄 Resource file handling (PDF, HTML)"
+                ],
+                implementation: `
+// Upload handling:
+const handleDrop = async (e) => {
+  const course = await processUploadedFolder(e.dataTransfer.items);
+  if (course) {
+    addCourse(course);
+  }
+};
+
+// Progress tracking
+<div style={{ width: \`\${uploadProgress}%\` }} />`,
+                connections: "Uses useFileUpload hook for processing, connects to CourseStore for saving courses"
+            },
+            "course-grid": {
+                title: "🗂️ Course Grid",
+                description: "Displays all courses in a responsive grid layout with progress indicators and delete functionality.",
+                functionality: [
+                    "📋 Grid layout of course cards",
+                    "📊 Progress visualization for each course",
+                    "🗑️ Course deletion with confirmation",
+                    "🎯 Click-to-play course navigation",
+                    "📱 Responsive design for all devices"
+                ],
+                implementation: `
+// Grid rendering:
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+  {courses.map(course => (
+    <CourseCard 
+      key={course.id} 
+      course={course} 
+      onDelete={() => handleDeleteCourse(course.id)}
+    />
+  ))}
+</div>`,
+                connections: "Renders CourseCard components, uses CourseStore for deletion operations"
+            },
+            "course-player": {
+                title: "🎥 Course Player Page",
+                description: "Main video viewing interface with sidebar navigation and progress tracking.",
+                functionality: [
+                    "▶️ Custom video player with controls",
+                    "📑 Resizable sidebar for course navigation",
+                    "✅ Video completion marking",
+                    "📊 Real-time progress tracking",
+                    "🎯 Video selection and playback"
+                ],
+                implementation: `
+// Player structure:
+const CoursePlayerPage = () => {
+  const { currentCourse, currentVideo } = useCourseStore();
+  
+  return (
+    <div className="flex">
+      <VideoPlayer video={currentVideo} />
+      <Sidebar 
+        course={currentCourse}
+        onVideoSelect={handleVideoSelect}
+      />
+    </div>
+  );
+};`,
+                connections: "Uses CourseStore for state, contains VideoPlayer and Sidebar components"
+            },
+            sidebar: {
+                title: "📑 Sidebar Navigation",
+                description: "Course navigation panel showing topics, videos, and resources with expandable sections.",
+                functionality: [
+                    "📚 Hierarchical course structure display",
+                    "🔽 Collapsible topic sections",
+                    "✅ Video completion indicators",
+                    "📄 Resource file access (PDF, HTML)",
+                    "📊 Topic-level progress tracking"
+                ],
+                implementation: `
+// Resource handling:
+const handleResourceClick = async (resource) => {
+  const resourceBlob = await videoStorage.getResource(resource.path);
+  const resourceUrl = videoStorage.createResourceUrl(resourceBlob);
+  window.open(resourceUrl, '_blank');
+};
+
+// Navigation structure:
+{course.topics.map(topic => (
+  <div key={topic.id}>
+    <button onClick={() => toggleTopic(topic.id)}>
+      {topic.title}
+    </button>
+    {/* Videos and resources */}
+  </div>
+))}`,
+                connections: "Reads from CourseStore, uses VideoStorage for resource access"
+            },
+            "video-player": {
+                title: "▶️ Video Player",
+                description: "Custom HTML5 video player with controls, progress tracking, and caption support.",
+                functionality: [
+                    "🎮 Custom video controls (play, pause, seek)",
+                    "🔊 Volume control with mute functionality",
+                    "⚡ Playback speed adjustment",
+                    "📝 Caption/subtitle support (VTT files)",
+                    "📊 Progress tracking and completion marking"
+                ],
+                implementation: `
+// Video controls:
+const VideoPlayer = ({ video, onComplete }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  
+  const togglePlay = () => {
+    if (isPlaying) {
+      videoRef.current?.pause();
+    } else {
+      videoRef.current?.play();
+    }
+  };
+  
+  return (
+    <video ref={videoRef} onTimeUpdate={handleProgress}>
+      {video.caption && <track kind="captions" src={captionUrl} />}
+    </video>
+  );
+};`,
+                connections: "Gets video data from VideoStorage, updates progress via CourseStore"
+            },
+            "storage-settings": {
+                title: "⚙️ Storage Settings",
+                description: "Interface for configuring storage limits with preset options and custom values.",
+                functionality: [
+                    "📏 Custom storage limit configuration",
+                    "⚡ Quick preset limit options (5GB, 10GB, etc.)",
+                    "💾 Persistent settings storage",
+                    "📊 Real-time storage usage display",
+                    "🔄 Reset to default functionality"
+                ],
+                implementation: `
+// Settings management:
+const StorageLimitSettings = () => {
+  const { storageLimit, setStorageLimit } = useStorageStore();
+  
+  const handleSave = () => {
+    const newLimitInBytes = tempLimit * 1024 * 1024 * 1024;
+    setStorageLimit(newLimitInBytes);
+  };
+  
+  return (
+    <div>
+      <input 
+        type="number" 
+        value={tempLimit} 
+        onChange={e => setTempLimit(e.target.value)}
+      />
+      {presetLimits.map(limit => (
+        <button onClick={() => setTempLimit(limit)}>
+          {limit}GB
+        </button>
+      ))}
+    </div>
+  );
+};`,
+                connections: "Uses StorageStore for limit management, persists to LocalStorage"
+            },
+            "course-store": {
+                title: "🏪 Course Store (Zustand)",
+                description: "Central state management for courses, current selections, and progress tracking.",
+                functionality: [
+                    "📚 Global course state management",
+                    "🎯 Current course/topic/video selection",
+                    "📊 Progress calculation and updates",
+                    "✅ Video completion toggling",
+                    "🗑️ Course deletion with cleanup"
+                ],
+                implementation: `
+// Store structure:
+export const useCourseStore = create((set, get) => ({
+  courses: [],
+  currentCourse: null,
+  currentVideo: null,
+  
+  selectCourse: (courseId) => {
+    const course = courses.find(c => c.id === courseId);
+    set({ currentCourse: course });
+  },
+  
+  toggleVideoCompletion: (courseId, topicId, videoId) => {
+    // Update completion status and progress
+    const updatedCourses = updateProgress(courses);
+    set({ courses: updatedCourses });
+    localStorage.setItem('courses', JSON.stringify(updatedCourses));
+  }
+}));`,
+                connections: "Persists to LocalStorage, coordinates with VideoStorage for file operations"
+            },
+            "storage-store": {
+                title: "💿 Storage Store",
+                description: "Manages storage limits and settings with persistent configuration.",
+                functionality: [
+                    "📏 Storage limit configuration",
+                    "💾 Persistent limit storage",
+                    "🔄 Default limit management",
+                    "⚙️ Settings state management",
+                    "📊 Limit validation and bounds checking"
+                ],
+                implementation: `
+// Storage store:
+export const useStorageStore = create((set, get) => ({
+  storageLimit: loadStorageLimit(),
+  
+  setStorageLimit: (limit) => {
+    set({ storageLimit: limit });
+    localStorage.setItem('storage_limit', limit.toString());
+  },
+  
+  getStorageLimit: () => get().storageLimit
+}));
+
+const loadStorageLimit = () => {
+  const saved = localStorage.getItem('storage_limit');
+  return saved ? parseInt(saved) : DEFAULT_LIMIT;
+};`,
+                connections: "Persists settings to LocalStorage, used by Dashboard for limit checks"
+            },
+            "file-upload-hook": {
+                title: "📤 useFileUpload Hook",
+                description: "Handles file processing, folder structure parsing, and course creation logic.",
+                functionality: [
+                    "📂 Folder structure processing",
+                    "🎥 Video file detection and storage",
+                    "📄 Resource file handling (PDF, HTML)",
+                    "📝 Caption file processing (.vtt)",
+                    "📊 Upload progress tracking"
+                ],
+                implementation: `
+// Upload processing:
+export const useFileUpload = () => {
+  const processUploadedFolder = async (items) => {
+    const topics = [];
+    
+    // Process each topic folder
+    for (const entry of entries) {
+      if (entry.isDirectory) {
+        const topic = { videos: [], resources: [] };
+        await readTopicFolder(entry, topic);
+        topics.push(topic);
+      }
+    }
+    
+    // Store videos and resources in IndexedDB
+    for (const video of topic.videos) {
+      await videoStorage.storeVideo(video.id, videoFile);
+    }
+    
+    return { id: generateId(), title: courseName, topics };
+  };
+};`,
+                connections: "Uses VideoStorage for file operations, creates courses for CourseStore"
+            },
+            "video-player-hook": {
+                title: "🎬 useVideoPlayer Hook",
+                description: "Manages video player state, controls, and playback functionality.",
+                functionality: [
+                    "▶️ Play/pause control logic",
+                    "📊 Progress tracking and seeking",
+                    "🔊 Volume and mute management",
+                    "⚡ Playback speed control",
+                    "📝 Caption display management"
+                ],
+                implementation: `
+// Video player logic:
+export const useVideoPlayer = (videoRef) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [volume, setVolume] = useState(1);
+  
+  const togglePlay = () => {
+    if (isPlaying) {
+      videoRef.current?.pause();
+    } else {
+      videoRef.current?.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+  
+  const handleProgress = () => {
+    const current = videoRef.current?.currentTime || 0;
+    const duration = videoRef.current?.duration || 0;
+    setProgress((current / duration) * 100);
+  };
+  
+  return { isPlaying, progress, volume, togglePlay, handleProgress };
+};`,
+                connections: "Used by VideoPlayer component for state management"
+            },
+            indexeddb: {
+                title: "🗄️ IndexedDB Storage",
+                description: "Browser database for storing large video files and resources offline.",
+                functionality: [
+                    "🎥 Video file storage as Blobs",
+                    "📄 Resource file storage (PDF, HTML)",
+                    "📝 Caption file storage",
+                    "💾 Offline access capability",
+                    "📊 Storage size calculation"
+                ],
+                implementation: `
+// IndexedDB operations:
+const db = await openDB('coursePlayerDB', 1, {
+  upgrade(db) {
+    db.createObjectStore('videos');
+  }
+});
+
+// Store video
+await db.put('videos', videoBlob, videoId);
+
+// Retrieve video
+const videoBlob = await db.get('videos', videoId);
+const videoUrl = URL.createObjectURL(videoBlob);`,
+                connections: "Accessed through VideoStorage class, stores files from upload process"
+            },
+            localstorage: {
+                title: "💽 LocalStorage",
+                description: "Browser storage for course metadata, progress, and user settings.",
+                functionality: [
+                    "📚 Course metadata storage",
+                    "📊 Progress tracking data",
+                    "⚙️ User preferences and settings",
+                    "📏 Storage limit configuration",
+                    "🎯 Last viewed video tracking"
+                ],
+                implementation: `
+// LocalStorage operations:
+// Save courses
+localStorage.setItem('courses', JSON.stringify(courses));
+
+// Load courses
+const coursesData = localStorage.getItem('courses');
+const courses = coursesData ? JSON.parse(coursesData) : [];
+
+// Save settings
+localStorage.setItem('storage_limit', limit.toString());
+
+// Progress tracking
+course.lastViewed = { topicId, videoId };
+course.progress = calculateProgress(course);`,
+                connections: "Used by CourseStore and StorageStore for data persistence"
+            },
+            "video-storage": {
+                title: "📹 VideoStorage Class",
+                description: "Abstraction layer for IndexedDB operations with video-specific functionality.",
+                functionality: [
+                    "🎥 Video blob storage and retrieval",
+                    "📄 Resource file management",
+                    "🔗 Blob URL creation and cleanup",
+                    "📊 Storage size calculation",
+                    "🗑️ File deletion and cleanup"
+                ],
+                implementation: `
+class VideoStorage {
+  async storeVideo(id, blob) {
+    const db = await this.init();
+    await db.put('videos', blob, id);
+  }
+  
+  async getVideo(id) {
+    const db = await this.init();
+    return db.get('videos', id);
+  }
+  
+  async getStorageSize() {
+    const keys = await store.getAllKeys();
+    let totalSize = 0;
+    for (const key of keys) {
+      const blob = await store.get(key);
+      if (blob) totalSize += blob.size;
+    }
+    return totalSize;
+  }
+  
+  createResourceUrl(blob) {
+    return URL.createObjectURL(blob);
+  }
+}`,
+                connections: "Interfaces with IndexedDB, used by hooks and stores for file operations"
+            },
+            "file-system": {
+                title: "📂 FileSystem API",
+                description: "Browser API for accessing files and folders through drag & drop interface.",
+                functionality: [
+                    "📂 Folder structure reading",
+                    "📄 File access and reading",
+                    "🎯 Directory entry traversal",
+                    "📊 File metadata extraction",
+                    "🔄 Recursive folder processing"
+                ],
+                implementation: `
+// FileSystem API usage:
+const folderEntry = item.webkitGetAsEntry();
+const dirReader = folderEntry.createReader();
+
+dirReader.readEntries(async (entries) => {
+  for (const entry of entries) {
+    if (entry.isFile) {
+      const file = await getFileFromEntry(entry);
+      // Process file
+    } else if (entry.isDirectory) {
+      // Process subdirectory
+    }
+  }
+});
+
+const getFileFromEntry = (fileEntry) => {
+  return new Promise((resolve) => {
+    fileEntry.file(resolve);
+  });
+};`,
+                connections: "Used by useFileUpload hook for processing dropped folders"
+            }
+        };
+
+        // Handle module clicks
+        document.querySelectorAll('.module').forEach(module => {
+            module.addEventListener('click', function() {
+                // Remove active class from all modules
+                document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+                
+                // Add active class to clicked module
+                this.classList.add('active');
+                
+                // Get module data
+                const moduleKey = this.dataset.module;
+                const data = moduleData[moduleKey];
+                
+                if (data) {
+                    displayModuleInfo(data);
+                }
+            });
+        });
+
+        function displayModuleInfo(data) {
+            const detailsDiv = document.getElementById('module-details');
+            
+            const functionalityList = data.functionality.map(item => `<li>${item}</li>`).join('');
+            
+            detailsDiv.innerHTML = `
+                <div class="module-info">
+                    <h3>${data.title}</h3>
+                    <p>${data.description}</p>
+                    
+                    <h4 style="color: #f39c12; margin: 15px 0 10px 0;">🔧 Key Functionality:</h4>
+                    <ul>${functionalityList}</ul>
+                    
+                    <h4 style="color: #f39c12; margin: 15px 0 10px 0;">💻 Implementation:</h4>
+                    <div class="code-snippet">${data.implementation}</div>
+                    
+                    <h4 style="color: #f39c12; margin: 15px 0 10px 0;">🔗 Connections:</h4>
+                    <p>${data.connections}</p>
+                </div>
+            `;
+        }
+
+        // Add hover effects for connections
+        document.querySelectorAll('.module').forEach(module => {
+            module.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px) scale(1.05)';
+            });
+            
+            module.addEventListener('mouseleave', function() {
+                if (!this.classList.contains('active')) {
+                    this.style.transform = '';
+                }
+            });
+        });
+
+        // Initialize with dashboard info
+        displayModuleInfo(moduleData.dashboard);
+        document.querySelector('[data-module="dashboard"]').classList.add('active');
+    </script>
+</body>
+</html>

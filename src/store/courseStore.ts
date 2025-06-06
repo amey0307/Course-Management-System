@@ -118,10 +118,10 @@ export const useCourseStore = create<CourseStore>((set, get) => ({
     const course = updatedCourses[courseIndex];
 
     // Find the topic and video
-    const topicIndex = course.topics.findIndex((t: { id: string; }) => t.id === topicId);
+    const topicIndex = course.topics.findIndex((t: {id: string}) => t.id === topicId);
     if (topicIndex === -1) return;
 
-    const videoIndex = course.topics[topicIndex].videos.findIndex((v: { id: string; }) => v.id === videoId);
+    const videoIndex = course.topics[topicIndex].videos.findIndex((v: {id: string}) => v.id === videoId);
     if (videoIndex === -1) return;
 
     // Toggle completion status
@@ -137,7 +137,7 @@ export const useCourseStore = create<CourseStore>((set, get) => ({
       completedVideos += topic.videos.filter((v: { completed: boolean; }) => v.completed).length;
     });
 
-    // Calculate and update progress percentage
+    // Calculate and update progress percentage of course
     const progress = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
     course.progress = progress;
 

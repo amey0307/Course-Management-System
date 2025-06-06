@@ -11,14 +11,12 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
   const { deleteCourse } = useCourseStore();
 
   const handleDeleteCourse = async (courseId: string) => {
-    if (confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
       try {
         await deleteCourse(courseId);
       } catch (error) {
         console.error('Failed to delete course:', error);
         alert('Failed to delete course. Please try again.');
       }
-    }
   };
 
   if (courses.length === 0) {

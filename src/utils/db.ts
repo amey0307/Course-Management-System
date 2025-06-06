@@ -31,7 +31,7 @@ class VideoStorage {
     await db.put(STORE_NAME, blob, id);
   }
 
-  async getVideo(id: string): Promise<Blob | null> {
+  async getVideo(id: string): Promise<Blob | undefined> {
     const db = await this.init();
     return db.get(STORE_NAME, id);
   }
