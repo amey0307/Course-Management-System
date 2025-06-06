@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Course, Topic, Video } from '../types';
+import { Course, Topic, Video, Resource } from '../types';
 import { generateId } from '../utils/helpers';
 import { videoStorage } from '../utils/db';
 
@@ -7,7 +7,6 @@ export const useFileUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-
 
   const processUploadedFolder = useCallback(async (items: DataTransferItemList): Promise<Course | null> => {
     setIsUploading(true);
@@ -28,6 +27,7 @@ export const useFileUpload = () => {
       const topics: Topic[] = [];
       const courseId = generateId();
 
+      // Read course folder
       await new Promise<void>((resolve) => {
         const dirReader = folderEntryAsDir.createReader();
 
@@ -43,12 +43,13 @@ export const useFileUpload = () => {
                 const topic: Topic = {
                   id: generateId(),
                   title: entry.name,
-                  videos: []
+                  videos: [],
+                  resources: []
                 };
 
                 await readTopicFolder(entry as FileSystemDirectoryEntry, topic);
 
-                if (topic.videos.length > 0) {
+                if (topic.videos.length > 0 || (topic.resources && topic.resources.length > 0)) {
                   topics.push(topic);
                 }
               }
@@ -72,29 +73,6 @@ export const useFileUpload = () => {
       };
 
       saveCourseData(course);
-
-      // Example of how to update progress during processing:
-      const totalSteps = 100; // Calculate based on number of files
-      let currentStep = 0;
-
-      // Simulate progress updates during file processing
-      const updateProgress = () => {
-        currentStep += 1;
-        const progress = Math.min((currentStep / totalSteps) * 100, 100);
-        setUploadProgress(progress);
-      };
-
-      // Call updateProgress() as you process each file
-      // For example:
-      for (const item of items) {
-        // Process each item
-        updateProgress();
-
-        // Add small delay to show progress
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-
-
       setUploadProgress(100);
       setIsUploading(false);
       return course;
@@ -103,7 +81,6 @@ export const useFileUpload = () => {
       return null;
     } finally {
       setIsUploading(false);
-      // Reset progress after a delay
       setTimeout(() => setUploadProgress(0), 2000);
     }
   }, []);
@@ -123,22 +100,23 @@ export const useFileUpload = () => {
             if (entry.isFile) {
               const fileEntry = entry as FileSystemFileEntry;
               const fileName = fileEntry.name;
+              const fileExtension = fileName.split('.').pop()?.toLowerCase();
 
-              if (fileName.match(/\.(mp4|webm|ogg|mov)$/i)) {
+              // Handle video files
+              if (fileExtension && ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'].includes(fileExtension)) {
                 const file = await getFileFromEntry(fileEntry);
                 const videoId = generateId();
 
-                // Store video file in IndexedDB
                 await videoStorage.storeVideo(videoId, file);
 
                 // Check for caption file
-                const captionFileName = fileName.replace(/\.[^/.]+$/, "") + ".srt";
+                const captionFileName = fileName.replace(/\.[^/.]+$/, "") + ".vtt";
                 let captionPath = undefined;
 
                 for (const captionEntry of entries) {
                   if (captionEntry.isFile && captionEntry.name === captionFileName) {
                     const captionFile = await getFileFromEntry(captionEntry as FileSystemFileEntry);
-                    const captionBlob = new Blob([captionFile], { type: 'text/srt' });
+                    const captionBlob = new Blob([captionFile], { type: 'text/vtt' });
                     const captionId = `caption-${videoId}`;
                     await videoStorage.storeVideo(captionId, captionBlob);
                     captionPath = captionId;
@@ -149,9 +127,28 @@ export const useFileUpload = () => {
                 topic.videos.push({
                   id: videoId,
                   title: fileName.replace(/\.[^/.]+$/, ""),
-                  path: videoId, // Store video ID instead of blob URL
+                  path: videoId,
                   caption: captionPath,
                   completed: false
+                });
+              }
+              // Handle resource files
+              else if (fileExtension && ['pdf', 'html'].includes(fileExtension)) {
+                const file = await getFileFromEntry(fileEntry);
+                const resourceId = generateId();
+
+                // Store resource file in IndexedDB
+                await videoStorage.storeVideo(resourceId, file);
+
+                if (!topic.resources) {
+                  topic.resources = [];
+                }
+
+                topic.resources.push({
+                  id: resourceId,
+                  title: fileName.replace(/\.[^/.]+$/, ""),
+                  path: resourceId,
+                  type: fileExtension as 'pdf' | 'html'
                 });
               }
             }

@@ -78,6 +78,27 @@ class VideoStorage {
       }
     }
   }
+
+  async getResource(resourceId: string): Promise<Blob | null> {
+    try {
+      const db = await this.init();
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const result = await store.get(resourceId);
+      return result || null;
+    } catch (error) {
+      console.error('Error retrieving resource:', error);
+      return null;
+    }
+  }
+
+  createResourceUrl(resourceBlob: Blob): string {
+    return URL.createObjectURL(resourceBlob);
+  }
+
+  revokeResourceUrl(url: string): void {
+    URL.revokeObjectURL(url);
+  }
 }
 
 export const videoStorage = new VideoStorage();

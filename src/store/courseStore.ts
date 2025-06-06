@@ -197,23 +197,32 @@ export const useCourseStore = create<CourseStore>((set, get) => ({
     const { courses, currentCourse } = get();
 
     try {
-      // Find the course to delete
       const courseToDelete = courses.find(c => c.id === courseId);
 
       if (courseToDelete) {
-        // Delete all video files for this course from IndexedDB
+        // Delete all video files and resources for this course from IndexedDB
         for (const topic of courseToDelete.topics) {
+          // Delete videos
           for (const video of topic.videos) {
             try {
               await videoStorage.deleteVideo(video.path);
 
-              // Delete caption file if exists
               if (video.caption) {
                 await videoStorage.deleteVideo(video.caption);
               }
             } catch (error) {
               console.warn(`Failed to delete video: ${video.path}`, error);
-              // Continue with deletion even if some files fail
+            }
+          }
+
+          // Delete resources
+          if (topic.resources) {
+            for (const resource of topic.resources) {
+              try {
+                await videoStorage.deleteVideo(resource.path);
+              } catch (error) {
+                console.warn(`Failed to delete resource: ${resource.path}`, error);
+              }
             }
           }
         }

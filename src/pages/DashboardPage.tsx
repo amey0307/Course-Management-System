@@ -3,7 +3,7 @@ import { useCourseStore } from '../store/courseStore';
 import CourseGrid from '../components/Dashboard/CourseGrid';
 import UploadArea from '../components/Dashboard/UploadArea';
 import StorageLimitSettings from '../components/StorageLimit/StorageLimitSettings';
-import { FolderPlus, Info, Folder, FileVideo, FileText, Plus, X, AlertTriangle, HardDrive, Trash2, Settings } from 'lucide-react';
+import { FolderPlus, Info, Folder, FileVideo, FileText, Plus, X, AlertTriangle, HardDrive, Trash2, Settings, ExternalLink } from 'lucide-react';
 import StorageManager from '../components/StorageLimit/StorageManager';
 import { videoStorage } from '../utils/db';
 import { useStorageStore } from '../store/StorageStore';
@@ -25,7 +25,7 @@ const DashboardPage: React.FC = () => {
     try {
       const currentSize = await videoStorage.getStorageSize();
       setStorageSize(currentSize);
-      
+
       if (currentSize > storageLimit) {
         setShowStorageAlert(true);
       }
@@ -60,7 +60,7 @@ const DashboardPage: React.FC = () => {
     <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Modern Grid Background */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#8882_1px,transparent_1px),linear-gradient(to_bottom,#8882_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)]"></div>
-      
+
       {/* Storage Alert Popup */}
       {showStorageAlert && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -92,15 +92,15 @@ const DashboardPage: React.FC = () => {
                     Limit: <span className="font-semibold">{formatBytes(storageLimit)}</span>
                   </span>
                 </div>
-                
+
                 <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
                   You've exceeded the {storageLimit / (1024 * 1024 * 1024)} GB storage limit. Please free up space by deleting some courses before uploading new ones.
                 </p>
 
                 {/* Progress bar showing storage usage */}
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-4">
-                  <div 
-                    className="bg-red-600 h-3 rounded-full transition-all duration-300" 
+                  <div
+                    className="bg-red-600 h-3 rounded-full transition-all duration-300"
                     style={{ width: `${Math.min((storageSize / storageLimit) * 100, 100)}%` }}
                   ></div>
                 </div>
@@ -145,7 +145,7 @@ const DashboardPage: React.FC = () => {
               Continue learning or upload a new course
             </p>
           </div>
-          
+
           {/* Controls */}
           <div className="flex items-center gap-4 mt-4 md:mt-0">
             <button
@@ -183,7 +183,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Storage Limit Settings */}
         {showSettings && <StorageLimitSettings />}
-        
+
         {/* Storage warning bar (always visible if over limit) */}
         {storageSize > storageLimit && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -203,7 +203,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
         )}
-        
+
         {/* Upload Area - Only show when button is clicked and storage is not full */}
         {showUploadArea && storageSize <= storageLimit && (
           <div className="mb-12 backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-xl">
@@ -211,7 +211,7 @@ const DashboardPage: React.FC = () => {
               <FolderPlus className="mr-2 h-5 w-5 text-blue-500" />
               <h2 className="text-xl font-semibold">Add New Course</h2>
             </div>
-            
+
             {/* Folder Structure Information */}
             <div className="mb-6 p-4 bg-blue-50/80 dark:bg-blue-900/30 border border-blue-200/60 dark:border-blue-800/60 rounded-lg backdrop-blur-sm">
               <div className="flex items-start mb-3">
@@ -223,40 +223,38 @@ const DashboardPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              
-              <div className="bg-white/90 dark:bg-gray-800/90 p-4 rounded-md border border-blue-200/60 dark:border-blue-700/60 backdrop-blur-sm">
-                <div className="font-mono text-sm space-y-1">
-                  <div className="flex items-center text-gray-700 dark:text-gray-300">
-                    <Folder className="mr-2 h-4 w-4 text-blue-500" />
-                    <span className="font-semibold">Course Name/</span>
-                  </div>
-                  <div className="ml-6 flex items-center text-gray-600 dark:text-gray-400">
-                    <Folder className="mr-2 h-4 w-4 text-yellow-500" />
-                    <span>01 Introduction/</span>
-                  </div>
-                  <div className="ml-12 flex items-center text-gray-600 dark:text-gray-400">
-                    <FileVideo className="mr-2 h-4 w-4 text-green-500" />
-                    <span>01 Welcome.mp4</span>
-                  </div>
-                  <div className="ml-12 flex items-center text-gray-600 dark:text-gray-400">
-                    <FileVideo className="mr-2 h-4 w-4 text-green-500" />
-                    <span>02 Course Overview.mp4</span>
-                  </div>
-                  <div className="ml-6 flex items-center text-gray-600 dark:text-gray-400">
-                    <Folder className="mr-2 h-4 w-4 text-yellow-500" />
-                    <span>02 Getting Started/</span>
-                  </div>
-                  <div className="ml-12 flex items-center text-gray-600 dark:text-gray-400">
-                    <FileVideo className="mr-2 h-4 w-4 text-green-500" />
-                    <span>01 Setup.mp4</span>
-                  </div>
-                  <div className="ml-12 flex items-center text-gray-600 dark:text-gray-400">
-                    <FileText className="mr-2 h-4 w-4 text-purple-500" />
-                    <span>01 Setup.vtt (optional captions)</span>
-                  </div>
+
+              <div className="font-mono text-sm space-y-1">
+                <div className="flex items-center text-gray-700 dark:text-gray-300">
+                  <Folder className="mr-2 h-4 w-4 text-blue-500" />
+                  <span className="font-semibold">Course Name/</span>
+                </div>
+                <div className="ml-6 flex items-center text-gray-600 dark:text-gray-400">
+                  <Folder className="mr-2 h-4 w-4 text-yellow-500" />
+                  <span>01 Introduction/</span>
+                </div>
+                <div className="ml-12 flex items-center text-gray-600 dark:text-gray-400">
+                  <FileVideo className="mr-2 h-4 w-4 text-green-500" />
+                  <span>01 Welcome.mp4</span>
+                </div>
+                <div className="ml-12 flex items-center text-gray-600 dark:text-gray-400">
+                  <FileText className="mr-2 h-4 w-4 text-red-500" />
+                  <span>Course Notes.pdf</span>
+                </div>
+                <div className="ml-12 flex items-center text-gray-600 dark:text-gray-400">
+                  <ExternalLink className="mr-2 h-4 w-4 text-blue-500" />
+                  <span>Reference.html</span>
+                </div>
+                <div className="ml-6 flex items-center text-gray-600 dark:text-gray-400">
+                  <Folder className="mr-2 h-4 w-4 text-yellow-500" />
+                  <span>02 Getting Started/</span>
+                </div>
+                <div className="ml-12 flex items-center text-gray-600 dark:text-gray-400">
+                  <FileVideo className="mr-2 h-4 w-4 text-green-500" />
+                  <span>01 Setup.mp4</span>
                 </div>
               </div>
-              
+
               <div className="mt-4 space-y-2 text-sm text-blue-800 dark:text-blue-200">
                 <div className="flex items-start">
                   <span className="font-semibold mr-2">•</span>
@@ -276,11 +274,11 @@ const DashboardPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <UploadArea />
           </div>
         )}
-        
+
         {courses.length > 0 && (
           <div className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-xl">
             <h2 className="text-xl font-semibold mb-4">Your Learning Journey</h2>
