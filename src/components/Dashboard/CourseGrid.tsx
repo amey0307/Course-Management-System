@@ -1,12 +1,26 @@
 import React from 'react';
 import CourseCard from './CourseCard';
 import { Course } from '../../types';
+import { useCourseStore } from '../../store/courseStore';
 
 interface CourseGridProps {
   courses: Course[];
 }
 
 const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
+  const { deleteCourse } = useCourseStore();
+
+  const handleDeleteCourse = async (courseId: string) => {
+    if (confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
+      try {
+        await deleteCourse(courseId);
+      } catch (error) {
+        console.error('Failed to delete course:', error);
+        alert('Failed to delete course. Please try again.');
+      }
+    }
+  };
+
   if (courses.length === 0) {
     return (
       <div className="text-center py-12">
@@ -20,7 +34,11 @@ const CourseGrid: React.FC<CourseGridProps> = ({ courses }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {courses.map((course) => (
-        <CourseCard key={course.id} course={course} />
+        <CourseCard 
+          key={course.id} 
+          course={course} 
+          onDelete={() => handleDeleteCourse(course.id)}
+        />
       ))}
     </div>
   );

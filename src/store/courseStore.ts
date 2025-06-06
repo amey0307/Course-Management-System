@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Course, Topic, Video } from '../types';
+import { videoStorage } from '../utils/db';
 
 type CourseStore = {
   courses: Course[];
@@ -14,6 +15,7 @@ type CourseStore = {
   toggleVideoCompletion: (courseId: string, topicId: string, videoId: string) => void;
   updateCourseProgress: (courseId: string) => void;
   addCourse: (course: Course) => void;
+  deleteCourse: (courseId: string) => Promise<void>;
 };
 
 export const useCourseStore = create<CourseStore>((set, get) => ({
@@ -105,7 +107,6 @@ export const useCourseStore = create<CourseStore>((set, get) => ({
     });
   },
 
-
   toggleVideoCompletion: (courseId, topicId, videoId) => {
     const { courses } = get();
     const courseIndex = courses.findIndex(c => c.id === courseId);
@@ -190,5 +191,55 @@ export const useCourseStore = create<CourseStore>((set, get) => ({
     // Update state and localStorage
     set({ courses: updatedCourses });
     localStorage.setItem('courses', JSON.stringify(updatedCourses));
+  },
+
+  deleteCourse: async (courseId: string) => {
+    const { courses, currentCourse } = get();
+
+    try {
+      // Find the course to delete
+      const courseToDelete = courses.find(c => c.id === courseId);
+
+      if (courseToDelete) {
+        // Delete all video files for this course from IndexedDB
+        for (const topic of courseToDelete.topics) {
+          for (const video of topic.videos) {
+            try {
+              await videoStorage.deleteVideo(video.path);
+
+              // Delete caption file if exists
+              if (video.caption) {
+                await videoStorage.deleteVideo(video.caption);
+              }
+            } catch (error) {
+              console.warn(`Failed to delete video: ${video.path}`, error);
+              // Continue with deletion even if some files fail
+            }
+          }
+        }
+      }
+
+      // Remove course from state
+      const updatedCourses = courses.filter(c => c.id !== courseId);
+
+      // Clear current course if it's the one being deleted
+      const newCurrentCourse = currentCourse?.id === courseId ? null : currentCourse;
+      const newCurrentTopic = currentCourse?.id === courseId ? null : get().currentTopic;
+      const newCurrentVideo = currentCourse?.id === courseId ? null : get().currentVideo;
+
+      // Update state and localStorage
+      set({
+        courses: updatedCourses,
+        currentCourse: newCurrentCourse,
+        currentTopic: newCurrentTopic,
+        currentVideo: newCurrentVideo
+      });
+
+      localStorage.setItem('courses', JSON.stringify(updatedCourses));
+
+    } catch (error) {
+      console.error('Failed to delete course:', error);
+      throw new Error('Failed to delete course. Please try again.');
+    }
   }
 }));
